@@ -1,0 +1,139 @@
+0.4.0 Released 11/5/13
+ - Added MatchesService.LoadAll. It retrieves all matches a user has ever been a part of.
+ - Added events for match expiration warnings
+ - Added winningTeam parameter (type:List<MatchPlayer>) to Match.Update that denotes the team that is currently winning
+
+0.3.9 Released 10/10/13
+ - BUGFIX: Send the realtime disconnect message during client shutdown
+
+0.3.8 Released 10/9/13
+ - Added new matchmaking endpoint
+ - Added new MatchesService.LoadCurrent overloads:
+  * LoadCurrent(Friend friend, ...)
+  * LoadCurrent(string accountId, ...)
+ - Added ProfilesService.Load(string id, List<string> fields, ...) overload
+ - New API for custom notification text for match updates
+ - Handle match complete notifications and expose Match Completed events
+ - fixed issue with dispatching friend online/offline events
+ - fixed issue with InMatch is 'join' state
+ - added reconnect flag
+ - fixed issue with packing floats
+
+0.3.7 Released 9/18/13
+ - Websocket ping checks
+
+0.3.6 Released 9/6/13
+ - Updates to MatchMaking API
+ - New Profile Matching API
+ - Removed QuickMatch
+ - Added Connected/Disconnected events to Realtime
+ -LeaderboardEntry updates:
+  * New Profile property returns the profile of the user.
+  * MemberID and MemberIdentity were removed. (Use Profile.Account instead)
+  * Requested profile data will now be part of the profile object, not LeaderboardEntry
+ -Leaderboard calls take a LeaderboardOptions object instead of the individual parameters
+
+0.3.5 - Released 8/19/13
+ - Account Block/Unblock functions
+ - Account UpdateVisibility function
+ - Expose Account fields
+
+0.3.4
+ - friends event online/offline
+ - friends event friend added event
+ - expose friends fields
+ - notifications get pulled on startup
+
+0.3.3
+ - code organization
+
+0.3.2
+ - added realtime simulation api
+ - added match simulation
+ - renamed ranked match -> quick match
+
+0.3.1
+ - matches have pagination
+ - matches and profile can now request which fields are returned when updated/fetching
+ - added updatedat and createdat on profiles/achievements/matches
+ - added optional paramter to request a reserved spot for invite
+ - allow updating of avatar url
+ - added ability to create match, join match or join ranked match as a group
+
+0.3.0
+ - added new smaller packer
+ - added realtime enhancements
+   - player list
+   - server/latency message
+
+0.2.8
+ - added push pop to the command list
+
+0.2.7
+ - fixed error with realtime connections, will now properly disconnect when stopping a running game
+
+0.2.6
+ - fixed crash with unhandled notification support
+
+0.2.4
+ - included websocket sharp source so that we don't have unity compiler issues
+ - trimmed websocket sharp code to work with ios and webplayer
+
+0.2.1
+ - fixed android and ios builds
+
+0.2.0
+ - changed updateusername to updateidentity
+ - fixed issue with interlocked.exchange on ios
+ - added account link endpoints
+ - added unhandled notifications api
+
+0.1.9
+ - added support for facebook auth
+ - added additional fields to pull stats from leaderboard calls
+ - added iOS push notification support
+ - added support for webplayer facebook auth
+
+0.1.8
+ - fixed broadcast extra/data field
+
+0.1.7
+ - changed websocket implemenation
+ - added support for the unity web player
+ - all realtime messages are now dispatched to the main thread
+
+0.1.6
+ - added fields to match listing (public/current) to request some of your data on listings
+ - renamed endpoint from /matches to /matches/current/me
+
+0.1.5
+ - added match templates
+
+0.1.4
+ - added new serilization for realtime messages
+ - added leaderboard histories
+ - added leaderboard sort
+ - added sdk and sdk version to initlization
+
+0.1.3
+ - changed threading model for realtime messages
+
+0.1.2
+ - added pretty print to json 
+
+0.1.1
+ - added identity model
+
+0.1.0
+ - more test gui
+ - added match leave/join events
+ - added session sendother 
+
+0.0.23:
+ - added better test gui
+ - refactored leaderboard api
+
+0.0.22:
+ - removed match acecpt/decline, we will use standard join/leave for these
+ - added match complete
+ - added ranked matches, ranked match buckets
