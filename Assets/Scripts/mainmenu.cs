@@ -124,8 +124,8 @@ public class mainmenu : MonoBehaviour {
 	//This method will create a Hydra match, and load the game world and UI.
 	void createamatch()
 	{
-		//The username has to be under 15 characters or the Hydra match will not be created.
-		if (userName.Length < 15) {
+		//The username has to be under 16 characters or the Hydra match will not be created.
+		if (userName.Length < 16) {
 			
 			//Hydra method to create a new match. Don't forget that you will need to create a "Match Type" in the Hydra 
 			Client.Instance.Match.CreateNew("standard-online-match", Match.Access.Public, delegate(Match match, Request req) {
