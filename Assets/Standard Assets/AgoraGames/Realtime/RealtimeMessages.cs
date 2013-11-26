@@ -315,7 +315,7 @@ namespace AgoraGames.Hydra
             AuthMessage authMessage = (AuthMessage)m;
 
             StreamUtils.WriteHexBinary16(s, authMessage.ApiKey);
-            StreamUtils.WriteHexBinary16(s, authMessage.Token);
+            StreamUtils.WriteString16(s, authMessage.Token);
             StreamUtils.WriteHexBinaryFixed(s, authMessage.AccountId, 12);
 
             // send additional info, for now just the identity

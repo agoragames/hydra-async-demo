@@ -10,9 +10,8 @@ namespace AgoraGames.Hydra.Util
 {
     public class AndroidRemoteNotifications
     {
-        protected UnityEngine.AndroidJavaClass unityPlayerClass = new UnityEngine.AndroidJavaClass("com.unity3d.player.UnityPlayer");
-        protected UnityEngine.AndroidJavaClass gcmClass = new UnityEngine.AndroidJavaClass("com.agoragames.hydra.unity.GCM");
-        protected UnityEngine.AndroidJavaObject currentActivity;
+        protected AndroidJavaClass unityPlayerClass = new UnityEngine.AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        protected AndroidJavaClass gcmClass = new UnityEngine.AndroidJavaClass("com.agoragames.hydra.unity.GCM");
 
         protected Client client;
 
@@ -21,19 +20,33 @@ namespace AgoraGames.Hydra.Util
             this.client = client;
         }
 
-        public void InitAndroidNotifications(UnityEngine.MonoBehaviour mono, string id)
+        public void InitAndroidNotifications(UnityEngine.MonoBehaviour mono, string androidProjectId)
         {
-            initAndroid(mono, id);
+            InitAndroidNotifications(mono, androidProjectId, null);
         }
 
-        // TODO: move me to the unity folder
-        protected void initAndroid(UnityEngine.MonoBehaviour mono, string id)
+        public void InitAndroidNotifications(UnityEngine.MonoBehaviour mono, string androidProjectId, string notificationTitle)
         {
-            client.Logger.Info("initAndroid");
+            InitAndroidNotifications(mono, androidProjectId, notificationTitle, "app_icon");
+        }
 
-            currentActivity = unityPlayerClass.GetStatic<UnityEngine.AndroidJavaObject>("currentActivity");
+        public void InitAndroidNotifications(UnityEngine.MonoBehaviour mono, string androidProjectId, string notificationTitle, string notificationIconName)
+        {
+            InitAndroidNotifications(mono, androidProjectId, notificationTitle, notificationIconName, null);
+        }
 
-            gcmClass.CallStatic("initNotifications", new object[] { currentActivity, mono.name, id });
+        public void InitAndroidNotifications(UnityEngine.MonoBehaviour mono, string androidProjectId, string notificationTitle, string notificationIconName, string notificationActivityClassName)
+        {
+            client.Logger.Info("InitAndroidNotifications");
+
+            UnityEngine.AndroidJavaObject currentActivity = unityPlayerClass.GetStatic<UnityEngine.AndroidJavaObject>("currentActivity");
+            CallInitAndroidNotifications(currentActivity, mono.name, androidProjectId, notificationActivityClassName, notificationTitle, notificationIconName);
+        }
+
+        // This must match GCM.initNotifications in GCM.java
+        protected void CallInitAndroidNotifications(AndroidJavaObject senderActivity, string gameObjectName, string androidProjectId, string notificationActivityClassName, string notificationTitle, string notificationIconName)
+        {
+            gcmClass.CallStatic("initNotifications", new object[] { senderActivity, gameObjectName, androidProjectId, notificationActivityClassName, notificationTitle, notificationIconName });
         }
 
     }

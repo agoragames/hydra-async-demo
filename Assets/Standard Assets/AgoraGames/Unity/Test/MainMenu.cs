@@ -37,6 +37,13 @@ namespace AgoraGames.Hydra.Test
         public override void Render()
         {
             int y = 0;
+            if(Client.Instance.AuthToken != null)
+            {
+                AuthType authType = Client.Instance.AuthToken.Type;
+                GUI.Label(new Rect(10, y, BUTTON_WIDTH, 25), "Logged in with " + Auth.GetAuthString(authType) + " authentication.");
+                y += 25;
+            }
+
             foreach(Entry e in mainEntries) 
             {
                 if (GUI.Button(new Rect(0, y, BUTTON_WIDTH, BUTTON_HEIGHT), e.title))
@@ -44,6 +51,12 @@ namespace AgoraGames.Hydra.Test
                     Main.SetState(e.state, null);
                 }
                 y += BUTTON_HEIGHT + 10;
+            }
+
+            if (GUI.Button(new Rect(0, y, BUTTON_WIDTH, BUTTON_HEIGHT), "Log out"))
+            {
+                Client.Instance.Logout();
+                Main.LoginScreen();
             }
         }
 

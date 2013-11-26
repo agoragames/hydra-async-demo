@@ -32,7 +32,8 @@ public class ingamemenu : MonoBehaviour {
 
 	
 	public Match match;
-
+	
+	//This method pull information regarding the current challenge from the Hydra match system.
 	public void GetMatchData()
 	{
 		menumainscript = GetComponent<mainmenu>();
@@ -46,6 +47,7 @@ public class ingamemenu : MonoBehaviour {
 		myUserName = Client.Instance.MyAccount.Identity.UserName;			
 	}
 	
+	//This method will send an updated score to Hydra, and will also mark the match as complete.
 	public void UpdateMatchScore()
 	{
 		timerscript = Timer.GetComponent<timer>();
@@ -91,20 +93,16 @@ public class ingamemenu : MonoBehaviour {
 			if (Client.Instance.IsInitalized) {
 				match.Complete(delegate(Request request){});
 			}
-		}
-		
+		}		
 		if (Client.Instance.IsInitalized) {
-			//GUI.Box(new Rect(350, 450, 300, 140), "");
-			//GUI.Label(new Rect(360, 460, 300, 100), "Match Name: " + matchName);
-			//GUI.Label(new Rect(360, 490, 300, 100), "Created By: " + creatorName);
+
 			if (isOpponent == true) {
 				GUI.Label(new Rect(10, 2, 500, 100), creatorName + "'s Time: " + creatorScore + " seconds", customGUIStyle);
 			}
-			//GUI.Label(new Rect(360, 540, 300, 100), "Player 2: " + opponentName);
-			//GUI.Label(new Rect(360, 560, 300, 100), "Score: " + opponentScore);
 		}
 	}
-
+	
+	//This method will destroy all created game objects, and return the player to the main menu.
 	public void leaveGame()
 	{
 		menumainscript = GetComponent<mainmenu>();

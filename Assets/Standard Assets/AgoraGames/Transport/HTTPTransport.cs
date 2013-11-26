@@ -42,9 +42,9 @@ namespace AgoraGames.Hydra
             headers[Client.HEADER_HTTP_METHOD] = request.Command;
             headers[Client.HEADER_CONTENT_TYPE] = "application/x-ag-binary";
 
-            if (client.AuthToken != null)
+            if (client.AccessToken != null)
             {
-                headers.Add(Client.HEADER_AUTH_TOKEN, client.AuthToken);
+                headers.Add(Client.HEADER_ACCESS_TOKEN, client.AccessToken);
             }
 
             // 

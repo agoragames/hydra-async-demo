@@ -28,6 +28,9 @@ namespace AgoraGames.Hydra.Test
 
         public override void Deactivate()
         {
+#if UNITY_WEBPLAYER
+            Main.FacebookTokenReceived -= Main_FacebookTokenReceived;
+#endif
         }
 
         public override void Render()
@@ -35,9 +38,9 @@ namespace AgoraGames.Hydra.Test
             TestUtil.RenderHeader(this, "Account");
             int y = 0;
 
-            if (GUI.Button(new Rect(0, y += 60, 130, 60), "Change Username"))
+            if (GUI.Button(new Rect(0, y+=60, 130, 30), "Change Username"))
             {
-                Main.PopupDialog("Change Usernname", delegate(string text)
+                Main.PopupDialog("Change Username", delegate(string text)
                 {
                     Identity newIdentity = new Identity(text);
 
@@ -49,7 +52,30 @@ namespace AgoraGames.Hydra.Test
                 });
             }
 
-            if (GUI.Button(new Rect(140, y, 130, 60), "Add Friend"))
+            if (GUI.Button(new Rect(0, y+30, 130, 30), "Change Password"))
+            {
+                Main.PopupDialog("Change Password", delegate(string text)
+                {
+                    Client.Instance.MyAccount.SetPassword(text, delegate(Request req)
+                    {
+                    });
+                });
+            }
+
+            if (GUI.Button(new Rect(140, y, 130, 30), "Change Email"))
+            {
+                Main.PopupDialog("Change Email", delegate(string text)
+                {
+                    Identity identity = Client.Instance.MyAccount.Identity;
+                    identity.Email = text;
+
+                    Client.Instance.MyAccount.UpdateIdentity(identity, delegate(Request req)
+                    {
+                    });
+                });
+            }
+
+            if (GUI.Button(new Rect(140, y+30, 130, 30), "Add Friend"))
             {
                 Main.PopupDialog("Username", delegate(string text)
                 {
@@ -60,12 +86,12 @@ namespace AgoraGames.Hydra.Test
                 });
             }
 
+#if UNITY_WEBPLAYER
             if (GUI.Button(new Rect(280, y, 130, 60), "Link facebook"))
             {
-#if UNITY_WEBPLAYER
-               Application.ExternalCall("LinkFacebook");
-#endif
+                Main.FacebookLogin();
             }
+#endif
 
             if (GUI.Button(new Rect(420, y, 130, 60), "Toggle Visibility"))
             {
@@ -227,6 +253,19 @@ namespace AgoraGames.Hydra.Test
             Client.Instance.Account.Friended += (friendId) => { this.NotificationText = friendId + " friended me!"; };
             Client.Instance.Account.FriendOnline += (friendId) => { this.NotificationText = friendId + " is online!"; };
             Client.Instance.Account.FriendOffline += (friendId) => { this.NotificationText = friendId + " is offline!"; };
+
+#if UNITY_WEBPLAYER
+            Main.FacebookTokenReceived += Main_FacebookTokenReceived;
+#endif
         }
+
+#if UNITY_WEBPLAYER
+        void Main_FacebookTokenReceived(string fbtoken)
+        {
+            Client.Instance.MyAccount.Link(new FacebookAuth(fbtoken), delegate(Request request)
+            {
+            });
+        }
+#endif
     }
 }

@@ -97,45 +97,48 @@ namespace AgoraGames.Hydra.Test
         {
             int x = 0;
 
-            // realtime...
-            int realtimeColumn = 400;
-            int realtimeY = y;
-
-            if (GUI.Button(new Rect(x + realtimeColumn, realtimeY += 35, 70, 20), "counter"))
+            if(match.RealtimeSession != null)
             {
-                Commands commands = new Commands();
+                // realtime...
+                int realtimeColumn = 400;
+                int realtimeY = y;
 
-                commands.IncValue("player.position", 1);
-                commands.SetValue("player.state", "dead");
-                commands.SetValue("player.time", DateTime.Now);
-                commands.SetValue("player.asdf", HelperUtil.EPOCH);
-                
-                //commands.PushValue("player.events", 123);
-
-                ((MatchLogic)match.RealtimeSession.Logic).Update(commands);
-            }
-            
-            GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 35, 250, 20), lastMessage);
-
-            if (GUI.Button(new Rect(x + realtimeColumn + 260, realtimeY, 90, 20), "Send Messages"))
-            {
-                for (int i = 0; i < 10; i++)
+                if (GUI.Button(new Rect(x + realtimeColumn, realtimeY += 35, 70, 20), "counter"))
                 {
-                    match.RealtimeSession.SendAll("hi " + totalMessages);
-                    totalMessages++;
+                    Commands commands = new Commands();
+
+                    commands.IncValue("player.position", 1);
+                    commands.SetValue("player.state", "dead");
+                    commands.SetValue("player.time", DateTime.Now);
+                    commands.SetValue("player.asdf", HelperUtil.EPOCH);
+
+                    //commands.PushValue("player.events", 123);
+
+                    ((MatchLogic)match.RealtimeSession.Logic).Update(commands);
                 }
+
+                GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 35, 250, 20), lastMessage);
+
+                if (GUI.Button(new Rect(x + realtimeColumn + 260, realtimeY, 90, 20), "Send Messages"))
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        match.RealtimeSession.SendAll("hi " + totalMessages);
+                        totalMessages++;
+                    }
+                }
+
+                GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 35, 200, 20), match.RealtimeSession.ServerTime.ToString());
+                GUI.TextArea(new Rect(x + realtimeColumn + 210, realtimeY, 40, 20), match.RealtimeSession.LastLatency.ToString());
+
+                if (GUI.Button(new Rect(x + realtimeColumn + 260, realtimeY, 90, 20), "Request Time"))
+                {
+                    match.RealtimeSession.RequestServerTime(null);
+                }
+
+                GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 30, 360, 150), this.realtimeMatchData);
+                GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 150, 360, 150), this.playerText);
             }
-
-            GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 35, 200, 20), match.RealtimeSession.ServerTime.ToString());
-            GUI.TextArea(new Rect(x + realtimeColumn + 210, realtimeY, 40, 20), match.RealtimeSession.LastLatency.ToString());
-
-            if (GUI.Button(new Rect(x + realtimeColumn + 260, realtimeY, 90, 20), "Request Time"))
-            {
-                match.RealtimeSession.RequestServerTime(null);
-            }
-
-            GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 30, 360, 150), this.realtimeMatchData);
-            GUI.TextArea(new Rect(x + realtimeColumn, realtimeY += 150, 360, 150), this.playerText);
 
             // rest....
             if (GUI.Button(new Rect(x, y += 35, 60, 60), "Kills"))
@@ -234,9 +237,12 @@ namespace AgoraGames.Hydra.Test
         protected void updatePlayerText()
         {
             this.playerText = "";
-            foreach(RealtimePlayer player in match.RealtimeSession.Players.Values) 
+            if(match.RealtimeSession != null)
             {
-                this.playerText += player.Identity.UserName + "\n";
+                foreach(RealtimePlayer player in match.RealtimeSession.Players.Values) 
+                {
+                    this.playerText += player.Identity.UserName + "\n";
+                }
             }
         }
 
@@ -249,14 +255,17 @@ namespace AgoraGames.Hydra.Test
             this.realtimeMatchData = "";
 
             match.JoinSession();
-            match.RealtimeSession.MessageStringRecieved += RealtimeSession_MessageStringRecieved;
-            ((MatchLogic)match.RealtimeSession.Logic).MatchUpdated += Logic_MatchUpdated;
+            if(match.RealtimeSession != null)
+            {
+                match.RealtimeSession.MessageStringRecieved += RealtimeSession_MessageStringRecieved;
+                ((MatchLogic)match.RealtimeSession.Logic).MatchUpdated += Logic_MatchUpdated;
 
-            match.RealtimeSession.Joined += RealtimeSession_Joined;
-            match.RealtimeSession.PlayerConnected += RealtimeSession_Player;
-            match.RealtimeSession.PlayerDisconnected += RealtimeSession_Player;
-            match.RealtimeSession.PlayerLeft += RealtimeSession_Player;
-            match.RealtimeSession.PlayerReconnected += RealtimeSession_Player;
+                match.RealtimeSession.Joined += RealtimeSession_Joined;
+                match.RealtimeSession.PlayerConnected += RealtimeSession_Player;
+                match.RealtimeSession.PlayerDisconnected += RealtimeSession_Player;
+                match.RealtimeSession.PlayerLeft += RealtimeSession_Player;
+                match.RealtimeSession.PlayerReconnected += RealtimeSession_Player;
+            }
             match.Updated += match_Updated;
             match.Completed += match_Completed;
             match.ExpirationWarning += match_ExpirationWarning;

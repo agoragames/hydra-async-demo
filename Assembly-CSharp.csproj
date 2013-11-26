@@ -44,14 +44,14 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\cameracontroller.cs" />
      <Compile Include="Assets\Scripts\ingamemenu.cs" />
+     <Compile Include="Assets\Scripts\leaderboards_widget.cs" />
      <Compile Include="Assets\Scripts\mainmenu.cs" />
      <Compile Include="Assets\Scripts\player.cs" />
-     <Compile Include="Assets\cameracontroller.cs" />
-     <Compile Include="Assets\leaderboards_widget.cs" />
-     <Compile Include="Assets\timer.cs" />
-     <Compile Include="Assets\trigger_goal.cs" />
-     <Compile Include="Assets\widget_achievements.cs" />
+     <Compile Include="Assets\Scripts\timer.cs" />
+     <Compile Include="Assets\Scripts\trigger_goal.cs" />
+     <Compile Include="Assets\Scripts\widget_achievements.cs" />
      <None Include="Assets\Plugins\Android\AndroidManifest.xml" />
   </ItemGroup>
   <ItemGroup>

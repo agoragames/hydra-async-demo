@@ -3,13 +3,8 @@
 using System;
 
 using System.Collections.Generic;
-using System.Collections;
 using System.Threading;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 
-using AgoraGames.Hydra.Util;
 using AgoraGames.Hydra.IO;
 
 #if _WEBSOCKETSHARP_
@@ -93,9 +88,9 @@ namespace AgoraGames.Hydra
         public void Shutdown()
         {
 #if _WEBSOCKETSHARP_
-           queueThreadMessage(new ShutdownEvent());
+            queueThreadMessage(new ShutdownEvent());
 
-            if (!connectThread.Join(1000))
+            if (connectThread != null && !connectThread.Join(1000))
             {
                 connectThread.Abort();
             }
@@ -124,7 +119,7 @@ namespace AgoraGames.Hydra
 
         protected void SendIdentity()
         {
-            AuthMessage m = new AuthMessage(client.AuthToken, client.ApiKey, client.MyAccount.Id, client.MyAccount.Identity, first);
+            AuthMessage m = new AuthMessage(client.AccessToken, client.ApiKey, client.MyAccount.Id, client.MyAccount.Identity, first);
 
             Send(OutgoingRegistry.ToBytes(m));
             first = false;
@@ -140,7 +135,14 @@ namespace AgoraGames.Hydra
         public void Send(byte [] data, bool reliable = true)
         {
 #if _WEBSOCKETSHARP_
-            ws.Send(data);
+            if (ws != null && isConnected)
+            {
+                ws.Send(data);
+            }
+            else
+            {
+                client.Logger.Warn("Trying to send a message when websocket connection is not up.");
+            }
 #endif
         }
 
@@ -148,8 +150,11 @@ namespace AgoraGames.Hydra
         {
             lock (clientLock)
             {
-                messages.Add(msg);
-                connectEvent.Set();
+                if (connectThread != null && connectEvent != null)
+                {
+                    messages.Add(msg);
+                    connectEvent.Set();
+                }
             }
         }
 
@@ -217,7 +222,7 @@ namespace AgoraGames.Hydra
                                 //TryConnect(currentEndpoint, 5000);
                             }
                         }
-                    } while (currentMessage != null);
+                    } while (currentMessage != null && !shutdown);
 
                     if (!shutdown)
                     {

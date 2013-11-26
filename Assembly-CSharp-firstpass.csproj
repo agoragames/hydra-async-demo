@@ -45,6 +45,14 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Standard Assets\AgoraGames\Auth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\AnonymousAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\FacebookAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\GoogleAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\HydraAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\LiveAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\PlatformAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\RecoveryAuth.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Auth\UUIDAuth.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\AuthType.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Client.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Commands.cs" />
@@ -108,6 +116,7 @@
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\LeaderboardMenu.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\LeaderboardsMenu.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\LobbyChatMenu.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\LoginMenu.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\Main.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\MainMenu.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\MatchMakingMenu.cs" />
@@ -118,6 +127,7 @@
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Test\TestUtil.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Util\AndroidRemoteNotifications.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Util\IOSRemoteNotifications.cs" />
+     <Compile Include="Assets\Standard Assets\AgoraGames\Unity\Util\UnityAuthManager.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Util\BinaryPacker.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Util\BinaryPacker2.cs" />
      <Compile Include="Assets\Standard Assets\AgoraGames\Util\Dispatcher.cs" />

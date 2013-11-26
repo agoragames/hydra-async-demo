@@ -8,18 +8,29 @@ using AgoraGames.Hydra.Util;
 
 public class Core : MonoBehaviour
 {
+    public enum AuthScheme
+    {
+        UUID,
+        Anonymous,
+        Custom
+    }
+
     public string url;
     public string apiKey;
+    public AuthScheme authenticationScheme = AuthScheme.UUID;
+
+#if UNITY_ANDROID
+    public bool defaultNotificationSetup = true;
+#endif
 
     protected float nextPing;
-
     protected static int PING_INTERVAL = 15; // seconds
 
     // TODO: make this an interface abstraction?
 #if UNITY_IPHONE && !UNITY_EDITOR
     IOSRemoteNotifications remoteNotifications;
 #elif UNITY_ANDROID && !UNITY_EDITOR
-    AndroidRemoteNotifications remoteNotifications;
+    public AndroidRemoteNotifications RemoteNotifications { get; protected set; }
 #endif
 
     // Unity
@@ -28,9 +39,8 @@ public class Core : MonoBehaviour
         Application.runInBackground = true;
 #if UNITY_IPHONE && !UNITY_EDITOR
         remoteNotifications = new IOSRemoteNotifications(Client.Instance);
-        remoteNotifications.Register();
 #elif UNITY_ANDROID && !UNITY_EDITOR
-        remoteNotifications = new AndroidRemoteNotifications(Client.Instance);
+        RemoteNotifications = new AndroidRemoteNotifications(Client.Instance);
 #endif
     }
 
@@ -41,16 +51,20 @@ public class Core : MonoBehaviour
         Client.Instance.Message.Connected += Message_Connected;
         Client.Instance.Message.Disconnected += Message_Disconnected;
 
-        Client.Instance.Logger.Info("startup sdk");
-        Client.Instance.Startup();
+        Client.Instance.Init(new UnityRunner(this), null, url, apiKey, new UnityAuthTokenManager());
 
-        Client.Instance.Init(new UnityRunner(this), null, url, apiKey);
-
-#if UNITY_WEBPLAYER
-		Application.ExternalCall("initHydraSdk",  new object[] { this.name });
-#endif
-
-        doDefaultAuth();
+        if (Client.Instance.AuthToken != null)
+        {
+            StartupHydra();
+        }
+        else if (authenticationScheme == AuthScheme.UUID)
+        {
+            StartupHydra(new UUIDAuth(SystemInfo.deviceUniqueIdentifier));
+        }
+        else if (authenticationScheme == AuthScheme.Anonymous)
+        {
+            StartupHydra(new AnonymousAuth());
+        }
     }
 
     void Message_Connected()
@@ -63,36 +77,51 @@ public class Core : MonoBehaviour
         Client.Instance.Logger.Info("Realtime offline");
     }
 
-    void doDefaultAuth()
+    public void StartupHydra()
     {
-        // for now we aren't going to cache any auth tokens
-        //authToken = PlayerPrefs.GetString(HEADER_AUTH_TOKEN, null);
+        Client.Instance.Logger.Info("Starting up Hydra SDK with saved auth token");
+        Client.Instance.Logger.Info("Connecting to " + url);
 
-        Client.Instance.Authenticate(AuthType.UUID, SystemInfo.deviceUniqueIdentifier, null, true, delegate(Request req)
+        Client.Instance.Startup(true, HandleStartupResponse);
+    }
+
+    public void StartupHydra(Auth auth)
+    {
+        Client.Instance.Logger.Info("Starting up Hydra SDK with " + Auth.GetAuthString(auth.AuthType) + " auth");
+        Client.Instance.Logger.Info("Connecting to " + url);
+
+        Client.Instance.Startup(auth, true,  HandleStartupResponse);
+    }
+        
+    protected void HandleStartupResponse(Request req)
+    {
+#if UNITY_IPHONE && !UNITY_EDITOR
+        if (Client.Instance.CurrentConfiguration.APNSEnabled)
         {
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-            if (Client.Instance.CurrentConfiguration.AndroidProjectNumber != null)
-            {
-                Client.Instance.Logger.Info("init android notifications");
-                remoteNotifications.InitAndroidNotifications(this, Client.Instance.CurrentConfiguration.AndroidProjectNumber);
-            }
+            Client.Instance.Logger.Info("Initializing iOS notifications");
+            remoteNotifications.Register();
+        }
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (defaultNotificationSetup && Client.Instance.CurrentConfiguration.GCMEnabled)
+        {
+            Client.Instance.Logger.Info("Initializing android notifications");
+            RemoteNotifications.InitAndroidNotifications(this, Client.Instance.CurrentConfiguration.AndroidProjectNumber);
+        }
 #endif
 
-            if (req.HasError())
-            {
-                Client.Instance.Logger.Error("invalid auth");
-            }
-            else
-            {
-                Client.Instance.Logger.Info("valid auth");
-            }
-        });
+        if (req.HasError())
+        {
+            Client.Instance.Logger.Error("Hydra SDK failed to start");
+        }
+        else
+        {
+            Client.Instance.Logger.Info("Hydra SDK started");
+        }
     }
 
     public void OnDisable()
     {
-        Client.Instance.Logger.Info("shutdown sdk");
+        Client.Instance.Logger.Info("Shutting down Hydra SDK");
 
         Client.Instance.Shutdown();
         Client.Instance.Logger.Handler -= UnityLoggerHandler;
@@ -113,20 +142,11 @@ public class Core : MonoBehaviour
     {
         if (Time.time > nextPing && Client.Instance.Message.IsConnected)
         {
-            Client.Instance.Logger.Info("ping");
+            Client.Instance.Logger.Info("Realtime ping");
             Client.Instance.Message.Ping();
             nextPing = Time.time + PING_INTERVAL;
         }
     }
-
-	// Facebook
-	public void AuthenticateWithFacebookAccessToken(string accessToken)
-	{
-		Client.Instance.Authenticate(AuthType.FACEBOOK, accessToken, delegate(Request req)
-        {
-            // push this
-        });
-	}
 
     // GCM
     public void OnRegistered(string id)
@@ -156,6 +176,14 @@ public class Core : MonoBehaviour
     {
         Client.Instance.Logger.Error(error);
     }
+
+    public void OnMessage(string message)
+    {
+        Client.Instance.Logger.Info("Received message : " + message);
+        Dictionary<object, object> data = (Dictionary<object, object>) MiniJSON.Json.Deserialize(message);
+        Client.Instance.Notification.Dispatch(data);
+    }
+
     // GCM
 
     void UnityLoggerHandler(Logger.Level level, string message)
@@ -173,5 +201,4 @@ public class Core : MonoBehaviour
             Debug.LogError(message);
         }
     }
-
 }

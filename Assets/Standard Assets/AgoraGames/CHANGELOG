@@ -1,3 +1,25 @@
+0.5.0 - Released 11/19/2013
+
+This release focused on the new Authentication System <https://hydra.agoragames.com/documentation/authentication.html> which is a breaking change. SDK 0.5.0 is a *required* update.
+
+* Added a third parameter to Client.Init, of type AuthTokenManager, for caching auth tokens.
+* Added Client.AuthToken property.
+* Added Client.Startup(RequestHandler) and Client.Startup(bool,RequestHandler) to startup with a cached token, if available.
+* Added Client.Startup(Auth,bool,RequestHandler) to start with the given auth credentials.
+* Added Client.Startup(AuthToken,bool,RequestHandler) to start with the given auth token.
+* Added AnonymousAuth class.
+* Added HydraAuth class.
+* Added LiveAuth class.
+* Added GoogleAuth class.
+* Added Client.Status which returns the Hydra SDK status (Starting, Started, Shutdown).
+* Added Client.Logout which will shutdown the Hydra SDK and ask the AuthTokenManager to delete its auth token.
+* Added Account.SetPassword which will enable Hydra authentication with the current account username, and the given password.
+* Added AccountsService.CreateAccount which will create a new account from scratch using the given username and password.
+* Added AccountsService.RecoverAccount to start the account recovery process.
+* Added RecoveryAuth object to handle logging in with an account recovery code.
+* Added default Android status bar notifications for GCM messages if the unity app is not running.
+* BUGFIX: Only register for iOS notifications if APNS has been enabled from the project dashboard.
+
 0.4.0 Released 11/5/13
  - Added MatchesService.LoadAll. It retrieves all matches a user has ever been a part of.
  - Added events for match expiration warnings

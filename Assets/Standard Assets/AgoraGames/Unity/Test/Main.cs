@@ -5,6 +5,8 @@ using System.Text;
 using UnityEngine;
 using AgoraGames.Hydra.Test;
 using AgoraGames.Hydra;
+using AgoraGames.Hydra.Util;
+using AgoraGames.Hydra.Models;
 
 public class Notification
 {
@@ -36,8 +38,16 @@ public class Main : MonoBehaviour
         BROADCAST_CHANNELS,
         BROADCAST_MESSAGES,
         LOBBY_CHAT,
-        FRIEND
+        FRIEND,
+        LOGIN
     };
+
+    public Core Core { get; protected set; }
+
+#if UNITY_WEBPLAYER
+    public delegate void FacebookTokenHandler(string fbtoken);
+    public event FacebookTokenHandler FacebookTokenReceived;
+#endif
 
     State state = State.MAIN_MENU;
     BaseMenu current = null;
@@ -72,12 +82,22 @@ public class Main : MonoBehaviour
         states[State.BROADCAST_MESSAGES] = new BroadcastMessagesMenu(this);
         states[State.LOBBY_CHAT] = new LobbyChatMenu(this);
         states[State.FRIEND] = new FriendMenu(this);
+        states[State.LOGIN] = new LoginMenu(this);
 
         Client.Instance.Match.UnhandledInvited += Match_UnhandledInvited;
         Client.Instance.Match.UnhandledUpdated += Match_UnhandledUpdated;
         Client.Instance.Match.UnhandledExpirationWarning += Match_UnhandledExpirationWarning;
 
-        SetState(State.MAIN_MENU, null);
+        SetState(Main.State.MAIN_MENU, null);
+    }
+
+    public void Awake()
+    {
+        Core = GetComponent<Core>();
+
+#if UNITY_WEBPLAYER
+        Application.ExternalCall("initHydraSdk",  new object[] { this.name });
+#endif
     }
 
     public void AddNotification(object receiver, string notification)
@@ -136,8 +156,15 @@ public class Main : MonoBehaviour
     
     void OnGUI()
     {
-        GUI.enabled = Client.Instance.IsInitalized;
+        bool loginScreen = state == State.LOGIN;
+        if (Client.Instance.Status == Client.ClientState.Shutdown && Client.Instance.AuthToken == null && !loginScreen)
+        {
+            // If hydra is shut down and it doesn't have an auth token, it must not know how we wan't to login yet.
+            // Note: AuthToken may be null while Hydra is starting up until it authenticates.
+            LoginScreen();
+        }
 
+        GUI.enabled = loginScreen ? true : Client.Instance.IsInitalized;
         if (hasPopup)
         {
             popupRect = GUI.Window(0, popupRect, DrawPopupDialog, popupTitle);
@@ -146,6 +173,36 @@ public class Main : MonoBehaviour
         {
             states[state].Render();
         }
+    }
+
+    public void LoginScreen()
+    {
+        SetState(State.LOGIN, new LoginMenuOptions(true, "Log in", delegate(Auth auth, bool create)
+        {
+            if (create)
+            {
+                if (auth.AuthType == AuthType.HYDRA)
+                {
+                    LoginMenu login = states[State.LOGIN] as LoginMenu;
+                    Client.Instance.Account.CreateAccount(login.Username, login.Password, delegate(Account account, Request request)
+                    {
+                        if (request.HasError())
+                        {
+                            Client.Instance.Logger.Error("Could not create account");
+                        }
+                        else
+                        {
+                            SetState(Main.State.MAIN_MENU, null);
+                        }
+                    });
+                }
+            }
+            else
+            {
+                Core.StartupHydra(auth);
+                SetState(Main.State.MAIN_MENU, null);
+            }
+        }));
     }
 
     // 
@@ -164,6 +221,23 @@ public class Main : MonoBehaviour
 
         popupTextField = GUI.TextField(new Rect(10, 50, 300, 40), popupTextField, 30);
     }
+
+#if UNITY_WEBPLAYER
+    // Facebook
+    public void FacebookLogin()
+    {
+        Application.ExternalCall("fbLogin",  new object[] { "FacebookTokenReceiver" });
+    }
+
+    public void FacebookTokenReceiver(string facebookToken)
+    {
+        Debug.Log("FacebookTokenReceiver: " + facebookToken);
+        if (FacebookTokenReceived != null)
+        {
+            FacebookTokenReceived(facebookToken);
+        }
+    }
+#endif
 
     class History {
         public State state = State.MAIN_MENU;

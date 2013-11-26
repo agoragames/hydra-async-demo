@@ -8,31 +8,38 @@ namespace AgoraGames.Hydra.Models
 {
     public class Configuration
     {
-        protected string androidNumber;
-        public string AndroidProjectNumber { get { return androidNumber; } }
+        public bool GCMEnabled { get; protected set; }
+        public string AndroidProjectNumber { get; protected set; }
 
-        protected bool realtimeEnabled;
-        public bool RealtimeEnabled { get { return realtimeEnabled; } }
+        public bool APNSEnabled { get; protected set; }
 
-        protected string realtimeEndpoint;
-        public string RealtimeEndpoint { get { return realtimeEndpoint; } }
+        public bool RealtimeEnabled { get; protected set; }
+        public string RealtimeEndpoint { get; protected set; }
 
         public Configuration(Dictionary<object, object> data)
         {
             MapHelper mapHelper = new MapHelper(data);
-            Dictionary<object, object> gcmData = mapHelper.GetValue("gcm", (Dictionary<object, object>)null);
 
+            Dictionary<object, object> gcmData = mapHelper.GetValue("gcm", (Dictionary<object, object>)null);
             if (gcmData != null)
             {
                 MapHelper gcmMapHelper = new MapHelper(gcmData);
-                androidNumber = gcmMapHelper.GetValue("project_number", (string)null);
+                GCMEnabled = gcmMapHelper.GetValue("enabled", false);
+                AndroidProjectNumber = gcmMapHelper.GetValue("project_number", (string)null);
+            }
+
+            Dictionary<object, object> apnsData = mapHelper.GetValue("apns", (Dictionary<object, object>)null);
+            if (apnsData != null)
+            {
+                MapHelper apnsMapHelper = new MapHelper(apnsData);
+                APNSEnabled = apnsMapHelper.GetValue("enabled", false);
             }
 
             // realtime info
             Dictionary<object, object> realtimeData = mapHelper.GetValue("realtime", (Dictionary<object, object>)null);
             MapHelper realtimeMapHelper = new MapHelper(realtimeData);
-            realtimeEnabled = realtimeMapHelper.GetValue("enabled", false);
-            realtimeEndpoint = realtimeMapHelper.GetValue("endpoint", (string)null);
+            RealtimeEnabled = realtimeMapHelper.GetValue("enabled", false);
+            RealtimeEndpoint = realtimeMapHelper.GetValue("endpoint", (string)null);
         }
     }
 }

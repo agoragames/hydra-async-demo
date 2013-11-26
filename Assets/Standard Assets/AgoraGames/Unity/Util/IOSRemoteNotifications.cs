@@ -35,13 +35,14 @@ namespace AgoraGames.Hydra.Util
             byte[] token = NotificationServices.deviceToken;
             if(token != null)
             {
+				client.Logger.Info("Registering for APNS remote notifications");
                 string hexToken = StreamUtils.ByteArrayToHex(token);
                 client.Notification.RegisterNotifications("apns", hexToken, delegate(Request request)
                 {
                     if(request.HasError())
                     {
                         // TODO: handle error!
-                        client.Logger.Error("error registering for APNs remote notifications");
+                        client.Logger.Error("Error registering for APNs remote notifications");
                     }
                 });
             }
@@ -71,7 +72,7 @@ namespace AgoraGames.Hydra.Util
 
         public void Process()
         {
-            if(!client.IsInitalized)
+            if(!client.IsInitalized || !client.CurrentConfiguration.APNSEnabled)
             {
                 return;
             }

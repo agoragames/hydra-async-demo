@@ -1,7 +1,8 @@
+using AgoraGames.Hydra.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using AgoraGames.Hydra.Util;
+
 namespace AgoraGames.Hydra.Models
 {
     public class Account : Model
@@ -86,14 +87,9 @@ namespace AgoraGames.Hydra.Models
             client.DoRequest("accounts/" + Id + "/identity", "put", identity.ConvertToRequest(), dual.Response);
         }
 
-        public void Link(AuthType type, string token, AgoraGames.Hydra.Client.HydraRequestHandler handler)
+        public void Link(Auth auth, AgoraGames.Hydra.Client.HydraRequestHandler handler)
         {
-            Link(type, token, new Dictionary<string, string>(), handler);
-        }
-
-        public void Link(AuthType type, string token, Dictionary<string, string> data, AgoraGames.Hydra.Client.HydraRequestHandler handler)
-        {
-            client.DoRequest("accounts/me/link", "put", Auth.GenerateAuthRequest(type, token, data), delegate(Request request)
+            client.DoRequest("accounts/me/link", "put", auth.GenerateAuthRequest(), delegate(Request request)
             {
                 // TODO: we need to handle the response here... the server will return a status which
                 //  will tell us that the link account already exists and we can then login and relink in the other directoin
@@ -167,6 +163,15 @@ namespace AgoraGames.Hydra.Models
         public List<Friend> GetFriends()
         {
             return Friends.GetObjectList();
+        }
+
+        public void SetPassword(string password, AgoraGames.Hydra.Client.HydraRequestHandler handler)
+        {
+            Dictionary<string, object> request = new Dictionary<string, object>();
+            request["password"] = password;
+
+            string url = "accounts/me/password";
+            client.DoRequest(url, "put", request, handler);
         }
 
         protected void HandleLoadFriendsResponse(Request request)

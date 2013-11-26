@@ -13,17 +13,17 @@ function initHydraSdk(unityName) {
   window.unityName = unityName;
 }
 
-function LinkFacebook() {
+function fbLogin(callback) {
    FB.login(function(response){
         console.log("Logged in to facebook");
-        getFBAccessToken();
+        sendFBAccessToken(callback);
       }, {scope: 'email'});
 }
 
-function getFBAccessToken() {
-  console.log("Sending Facebook access token to Hydra");
+function sendFBAccessToken(callback) {
+  console.log("Sending Facebook access token to " + callback);
   var token = FB.getAccessToken()
-  unityObject.getUnity().SendMessage(window.unityName, "AuthenticateWithFacebookAccessToken", token);
+  unityObject.getUnity().SendMessage(window.unityName, callback, token);
 }
 
 //Load the Facebook JS SDK

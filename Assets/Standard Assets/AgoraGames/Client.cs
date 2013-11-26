@@ -11,32 +11,36 @@ namespace AgoraGames.Hydra
 {
     public class Client
     {
-        public static String VERSION = "0.4.0";
+        public static String VERSION = "0.5.0";
+
+        public enum ClientState
+        {
+            Starting,
+            Started,
+            Shutdown
+        }
 
         protected string url;
         public string Url { get { return url; } }
 
-        protected string apiKey;
-
         public static string HEADER_APIKEY = "X-Hydra-API-Key";
         public static string HEADER_HTTP_METHOD = "X-Hydra-HTTP-Method";
-        public static string HEADER_AUTH_TOKEN = "AUTH-TOKEN";
+        public static string HEADER_ACCESS_TOKEN = "x-hydra-access-token";
         public static string HEADER_CONTENT_TYPE = "content-type";
 
-        protected string uniqueId = null;
-        protected string authToken = null;
+        public AuthTokenManager AuthTokenManager { get; protected set; }
+        public AuthToken AuthToken { get; set; }
 
-        public string AuthToken { get { return authToken; } }
-        public string ApiKey { get { return apiKey; } }
-        public bool IsInitalized { get; protected set; }
+        public string AccessToken { get; protected set; }
+        public string ApiKey { get; protected set; }
+
+        public ClientState Status { get; protected set; }
+        public bool IsInitalized { get { return Status == ClientState.Started; } }
 
         protected Logger logger = new Logger();
         public Logger Logger { get { return logger; } }
 
         // services/factories
-        protected Auth auth = new Auth();
-        public Auth Auth { get { return Auth; } }
-
         protected AccountsService account = null;
         public AccountsService Account { get { return account; } }
 
@@ -92,6 +96,8 @@ namespace AgoraGames.Hydra
             }
         }
 
+        // Client properties
+
         protected Account myAccount = null;
         public Account MyAccount
         {
@@ -119,7 +125,7 @@ namespace AgoraGames.Hydra
             }
         }
 
-        protected Configuration currentConfiguration;
+        protected Configuration currentConfiguration = null;
         public Configuration CurrentConfiguration
         {
             get
@@ -128,7 +134,10 @@ namespace AgoraGames.Hydra
             }
         }
 
+        // Startup properties
+
         protected HydraRequestHandler InitCallback { get; set; }
+        protected bool LoadDataDuringStartup { get; set; }
 
         public Client()
         {
@@ -147,58 +156,96 @@ namespace AgoraGames.Hydra
 
             Dispatcher = new Dispatcher<IncomingMessage>(this, Message.ProcessMessage);
             EventDispatcher = new Dispatcher<RealtimeEvents>(this, Message.ProcessEvent);
-            IsInitalized = false;
+            Status = ClientState.Shutdown;
+        }
+
+        protected bool IsValidAuthToken(AuthToken token)
+        {
+            return token != null && token.Token.Trim() != "" && token.Type != AuthType.UNKNOWN;
         }
 
         // TODO: we need a better way to pass in the runner and transport
-        public void Init(Runner runner, Transport transport, string url, string apiKey)
+        public void Init(Runner runner, Transport transport, string url, string apiKey, AuthTokenManager authTokenManager)
         {
             this.runner = runner;
             this.transport = transport;
 
             this.url = url.Trim();
-            this.apiKey = apiKey.Trim();
+            this.ApiKey = apiKey.Trim();
+            this.AuthTokenManager = authTokenManager;
+            this.AuthToken = null;
 
-            this.runner = runner;
+            AuthToken token = AuthTokenManager.LoadAuthToken();
+            if (IsValidAuthToken(token))
+            {
+                AuthToken = token;
+            }
         }
 
-        public void Authenticate(AuthType type, string token, HydraRequestHandler init)
-		{
-            Authenticate(type, token, null, true, init);
-		}
+        public void Startup(HydraRequestHandler init)
+        {
+            Startup(true, init);
+        }
 
-        public void Authenticate(AuthType type, string token, Dictionary<string, string> data, bool fetchData, HydraRequestHandler init)
+        public void Startup(bool loadData, HydraRequestHandler init)
+        {
+            Startup(AuthToken, loadData, init);
+        }
+
+        public void Startup(Auth auth, bool loadData, HydraRequestHandler init)
+        {
+            PreStartup(loadData, init);
+
+            Authenticate(auth);
+        }
+
+        public void Startup(AuthToken authToken, bool loadData, HydraRequestHandler init)
+        {
+            PreStartup(loadData, init);
+            AuthToken = authToken;
+
+            Access(AuthToken.Token);
+        }
+
+        protected void PreStartup(bool loadData, HydraRequestHandler init)
         {
             InitCallback = init;
+            LoadDataDuringStartup = loadData;
 
-            Dictionary<string, string> reqData =  Auth.GenerateAuthRequest(type, token, data);
-            DoRequest("auth", "post", reqData, HandleAuthResponse);
-        }
+            Status = ClientState.Starting;
 
-        protected void HandleAuthResponse(Request request)
-		{
-            if (!request.HasError())
-            {
-                Dictionary<object, object> resp = (Dictionary<object, object>)request.Data;
-                this.authToken = (String)resp["token"];
-
-                LoadData();
-            }
-            else
-            {
-                LoadCompleted(request);
-            }
-        }
-
-        public void Startup()
-        {
             Message.Startup();
         }
 
         public void Shutdown()
         {
-            Message.Disconnect();
+            if(Message.IsConnected)
+                Message.Disconnect();
+
             Message.Shutdown();
+            Status = ClientState.Shutdown;
+            AccessToken = null;
+
+            myAccount = null;
+            myProfile = null;
+            allAchievements.Clear();
+            currentConfiguration = null;
+
+            Logger.Info("Client shut down.");
+        }
+
+        public void Logout()
+        {
+            Shutdown();
+            ClearAuthToken();
+
+            Logger.Info("Client logged off.");
+        }
+
+        protected void ClearAuthToken()
+        {
+            AuthTokenManager.DeleteAuthToken();
+            AuthToken = null;
         }
 
         public Request DoRequest(string endpoint, string verb, object param, HydraRequestHandler response)
@@ -209,6 +256,61 @@ namespace AgoraGames.Hydra
             runner.DoRequest(this, request);
 
             return request;
+        }
+
+        protected void Authenticate(Auth auth)
+        {
+            Dictionary<string, object> reqData = auth.GenerateAuthRequest();
+            DoRequest("auth", "post", reqData, HandleAuthResponse);
+        }
+
+        protected void HandleAuthResponse(Request request)
+        {
+            if (!request.HasError())
+            {
+                Dictionary<object, object> resp = (Dictionary<object, object>)request.Data;
+                string authToken = (String)resp["token"];
+                string authType = (String)resp["type"];
+                AuthToken = new AuthToken(authToken, Auth.GetAuthType(authType));
+
+                AuthTokenManager.SaveAuthToken(AuthToken);
+                Access(authToken);
+            }
+            else
+            {
+                LoadCompleted(request);
+            }
+        }
+
+        protected void Access(string authToken)
+        {
+            Dictionary<string, string> accessData = new Dictionary<string, string>();
+            accessData["auth_token"] = authToken;
+            DoRequest("access", "post", accessData, HandleAccessResponse);
+        }
+
+        protected void HandleAccessResponse(Request request)
+        {
+            if (!request.HasError())
+            {
+                Dictionary<object, object> resp = (Dictionary<object, object>)request.Data;
+                this.AccessToken = (String)resp["token"];
+
+                if (LoadDataDuringStartup)
+                    LoadData();
+                else
+                    LoadCompleted(request);
+            }
+            else
+            {
+                // If the access request failed, we must have an invalid auth token. No sense in keeping it around, since we might try to use it again.
+                if (request.Status == 400)
+                {
+                    ClearAuthToken();
+                }
+
+                LoadCompleted(request);
+            }
         }
 
         protected void LoadData()
@@ -302,7 +404,7 @@ namespace AgoraGames.Hydra
 
         public void ConnectRealtime() 
         {
-            if (currentConfiguration.RealtimeEnabled)
+            if (currentConfiguration != null && currentConfiguration.RealtimeEnabled)
             {
                 Message.Connect(currentConfiguration.RealtimeEndpoint);
             }
@@ -311,20 +413,28 @@ namespace AgoraGames.Hydra
         // callbacks
         protected void LoadCompleted(Request request)
         {
-            if (request.HasError())
+            StartupCompleted(request.HasError(), "Please check for latest sdk version");
+            if (!request.HasError())
             {
-                // TODO: set api state to something invalid
-
-                IsInitalized = false;
-                Logger.Error("sdk initalized failed, please check for latest sdk version");
-            }
-            else
-            {
-                IsInitalized = true;
+                Status = ClientState.Started;
                 ConnectRealtime();
             }
 
             InitCallback(request);
+        }
+
+        protected void StartupCompleted(bool error, string errormessage)
+        {
+            if (error)
+            {
+                Status = ClientState.Shutdown;
+                Logger.Error("Client Startup failed: " + errormessage);
+            }
+            else
+            {
+                Status = ClientState.Started;
+                Logger.Info("Client Startup succesful!");
+            }
         }
 
         // utils

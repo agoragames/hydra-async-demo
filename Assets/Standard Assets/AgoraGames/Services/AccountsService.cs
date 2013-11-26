@@ -23,6 +23,34 @@ namespace AgoraGames.Hydra.Services
             this.client = client;
 		}
 
+        public void CreateAccount(string username, string password, AccountHandler handler)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["username"] = username;
+            data["password"] = password;
+            client.DoRequest("accounts", "post", data, delegate(Request request)
+            {
+                if (request.HasError())
+                {
+                    handler(null, request);
+                }
+                else
+                {
+                    client.Startup(new HydraAuth(username, password), true, delegate(Request startupRequest)
+                    {
+                        handler(client.MyAccount, startupRequest);
+                    });
+                }
+            });
+        }
+
+        public void RecoverAccount(string email, AgoraGames.Hydra.Client.HydraRequestHandler handler)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["email"] = email;
+            client.DoRequest("accounts/recover", "post", data, handler);
+        }
+
         public void Load(AccountHandler handler)
         {
             Load("me", handler);
